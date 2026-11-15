@@ -27,8 +27,8 @@ const scalpTypes = ['Sec', 'Gras', 'Sensible']
 const goals = ['Hydratation', 'Pousse', 'Réparation', 'Protéger mes tresses']
 const signupValidationKeys: Record<string, string> = {
   username: 'username',
+  email: 'email',
   firstName: 'firstName',
-  phone: 'phone',
   password: 'password',
   gender: 'gender',
   acceptedTerms: 'terms',
@@ -194,7 +194,7 @@ function LoginPage() {
   const location = useLocation()
   const { t } = useTranslation()
   const { login, configured } = useAuth()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
@@ -205,7 +205,7 @@ function LoginPage() {
     setError('')
     setPending(true)
     try {
-      await login(username, password)
+      await login(email, password)
       const state = location.state as { from?: { pathname?: string } } | null
       navigate(state?.from?.pathname || '/', { replace: true })
     } catch (caughtError) {
@@ -221,8 +221,11 @@ function LoginPage() {
       <div className="auth-panel">
         <h1>{t('auth.reconnect')}</h1>
         <p>{t('auth.loginSubtitle')}</p>
+        {(location.state as { emailConfirmationSent?: boolean } | null)?.emailConfirmationSent ? (
+          <p className="auth-note" role="status">{t('auth.emailConfirmationSent')}</p>
+        ) : null}
         <form onSubmit={(event) => void handleSubmit(event)}>
-          <Field label={t('auth.usernameOrPhone')} value={username} onChange={setUsername} />
+          <Field label={t('auth.email')} type="email" value={email} onChange={setEmail} />
           <Field label={t('auth.password')} type="password" value={password} onChange={setPassword} />
           {error ? <div className="error-banner" role="alert">{error}</div> : null}
           {!configured ? <p className="auth-note" role="status">{t('auth.supabaseLoginSetup')}</p> : null}
@@ -243,9 +246,9 @@ function SignupPage({ role }: { role: 'client' | 'hairdresser' }) {
   const { t } = useTranslation()
   const { signup, configured } = useAuth()
   const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
   const [gender, setGender] = useState<'female' | 'male' | ''>('')
   const [city, setCity] = useState('')
@@ -261,8 +264,8 @@ function SignupPage({ role }: { role: 'client' | 'hairdresser' }) {
     setError('')
     const values = {
       username,
+      email,
       firstName,
-      phone,
       password,
       gender,
       acceptedTerms: accepted,
@@ -285,7 +288,11 @@ function SignupPage({ role }: { role: 'client' | 'hairdresser' }) {
 
     setPending(true)
     try {
-      await signup(parsed.data)
+      const result = await signup(parsed.data)
+      if (result.confirmationRequired) {
+        navigate('/connexion', { replace: true, state: { emailConfirmationSent: true } })
+        return
+      }
       navigate(role === 'client' ? '/' : '/pro', { replace: true })
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'Impossible de créer le compte.')
@@ -302,16 +309,27 @@ function SignupPage({ role }: { role: 'client' | 'hairdresser' }) {
         <p>{role === 'client' ? t('auth.clientSubtitle') : t('auth.hairdresserSubtitle')}</p>
 
         <form onSubmit={(event) => void handleSubmit(event)}>
-          <Field label={t('auth.username')} value={username} onChange={setUsername} help={t('auth.usernameHelp')} />
-          <Field label={t('auth.firstName')} value={firstName} onChange={setFirstName} placeholder={t('auth.firstNamePlaceholder')} help={t('auth.firstNameHint', { honorific: HONORIFIC })} />
-          {role === 'hairdresser' ? <Field label={t('auth.lastName')} value={lastName} onChange={setLastName} placeholder={t('auth.lastNamePlaceholder')} /> : null}
-          <Field label={t('auth.phone')} value={phone} onChange={setPhone} placeholder={t('auth.phonePlaceholder')} />
+          <Field
+            label={t('auth.username')}
+            value={username}
+            onChange={setUsername}
+            help={t('auth.usernameHelp', { honorific: HONORIFIC, username: username.trim() || '…' })}
+          />
+          <Field label={t('auth.email')} type="email" value={email} onChange={setEmail} />
           <Field label={t('auth.password')} type="password" value={password} onChange={setPassword} help={t('auth.passwordHelp')} />
           <span className="field-label">{t('auth.gender')}</span>
           <div className="segment-row">
             <Chip selected={gender === 'female'} onClick={() => setGender('female')}>{t('auth.female')}</Chip>
             <Chip selected={gender === 'male'} onClick={() => setGender('male')}>{t('auth.male')}</Chip>
           </div>
+          <Field
+            label={t('auth.firstName')}
+            value={firstName}
+            onChange={setFirstName}
+            placeholder={t('auth.firstNamePlaceholder')}
+            help={t('auth.firstNameHint')}
+          />
+          {role === 'hairdresser' ? <Field label={t('auth.lastName')} value={lastName} onChange={setLastName} placeholder={t('auth.lastNamePlaceholder')} /> : null}
           {role === 'hairdresser' ? (
             <>
               <Field label={t('auth.city')} value={city} onChange={setCity} placeholder="Ex. Douala" />
@@ -597,7 +615,7 @@ function HairProfilePage() {
   )
 }
 
-function ProfilePage({ profile, onLogout }: { profile: { first_name: string; username: string; phone: string } | null; onLogout: () => Promise<void> }) {
+function ProfilePage({ profile, onLogout }: { profile: { first_name: string; username: string; phone: string | null } | null; onLogout: () => Promise<void> }) {
   const [message, setMessage] = useState('')
 
   const handleLogout = async () => {

@@ -8,14 +8,15 @@ const corsHeaders = {
 }
 
 const loginSchema = z.object({
-  identifier: z.string().trim().min(1).max(100),
+  email: z.string().trim().toLowerCase().email().max(254),
   password: z.string().min(1).max(256),
 })
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
 
-if (!supabaseUrl || !serviceRoleKey) {
+if (!supabaseUrl || !serviceRoleKey || !anonKey) {
   throw new Error('Missing Supabase Edge Function configuration')
 }
 
@@ -30,8 +31,8 @@ function jsonResponse(body: unknown, status = 200) {
   })
 }
 
-async function hashIdentifier(identifier: string) {
-  const bytes = new TextEncoder().encode(identifier.replace(/\s+/g, '').toLowerCase())
+async function hashIdentifier(email: string) {
+  const bytes = new TextEncoder().encode(email.trim().toLowerCase())
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(serviceRoleKey),
@@ -54,7 +55,7 @@ Deno.serve(async (request) => {
     return jsonResponse({ message: 'Identifiants incorrects' }, 400)
   }
 
-  const identifierHash = await hashIdentifier(input.identifier)
+  const identifierHash = await hashIdentifier(input.email)
   const since = new Date(Date.now() - 15 * 60 * 1000).toISOString()
   const { count, error: countError } = await admin
     .from('auth_attempts')
@@ -66,17 +67,11 @@ Deno.serve(async (request) => {
   if (countError) return jsonResponse({ message: 'Service temporairement indisponible.' }, 503)
   if ((count ?? 0) >= 10) return jsonResponse({ message: 'Identifiants incorrects' }, 429)
 
-  let phone = input.identifier.replace(/\s+/g, '')
-  if (!phone.startsWith('+237')) {
-    const { data: resolvedPhone, error: lookupError } = await admin.rpc('lookup_phone_by_username', {
-      input_username: input.identifier,
-    })
-    if (lookupError) return jsonResponse({ message: 'Service temporairement indisponible.' }, 503)
-    phone = typeof resolvedPhone === 'string' ? resolvedPhone : ''
-  }
-
-  const { data, error } = await admin.auth.signInWithPassword({
-    phone,
+  const authClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data, error } = await authClient.auth.signInWithPassword({
+    email: input.email,
     password: input.password,
   })
 

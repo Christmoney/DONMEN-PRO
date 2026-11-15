@@ -1,25 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { clientSignupSchema, hairdresserSignupSchema, normalizeCameroonPhone } from './validation'
+import { clientSignupSchema, hairdresserSignupSchema } from './validation'
 
 const validClient = {
   username: 'Christ_1',
+  email: 'christ@example.com',
   firstName: 'Christ',
-  phone: '+237 6 12 34 56 78',
   password: 'secret1',
   gender: 'male' as const,
   acceptedTerms: true as const,
 }
 
 describe('clientSignupSchema', () => {
-  it('accepts a valid Cameroon client signup and formatted phone', () => {
+  it('accepts a valid client signup without a phone number', () => {
     expect(clientSignupSchema.safeParse(validClient).success).toBe(true)
-    expect(normalizeCameroonPhone(validClient.phone)).toBe('+237612345678')
   })
 
-  it('rejects short usernames, invalid phones, and missing consent', () => {
+  it('rejects short usernames, invalid emails, and missing consent', () => {
     expect(clientSignupSchema.safeParse({ ...validClient, username: 'ab' }).success).toBe(false)
-    expect(clientSignupSchema.safeParse({ ...validClient, phone: '612345678' }).success).toBe(false)
+    expect(clientSignupSchema.safeParse({ ...validClient, email: 'invalid' }).success).toBe(false)
     expect(clientSignupSchema.safeParse({ ...validClient, acceptedTerms: false }).success).toBe(false)
   })
 

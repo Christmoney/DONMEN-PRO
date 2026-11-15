@@ -10,8 +10,8 @@ const corsHeaders = {
 
 const commonSignup = {
   username: z.string().trim().min(3).max(20).regex(/^[a-zA-Z0-9._-]+$/),
+  email: z.string().trim().toLowerCase().email().max(254),
   firstName: z.string().trim().min(1).max(100),
-  phone: z.string().trim().regex(/^\+237[0-9]{9}$/),
   password: z.string().min(MIN_PASSWORD_LENGTH).max(256),
   gender: z.enum(['female', 'male']),
   acceptedTerms: z.literal(true),
@@ -31,15 +31,11 @@ const signupSchema = z.discriminatedUnion('role', [
 ])
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
-const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
 
-if (!supabaseUrl || !serviceRoleKey) {
+if (!supabaseUrl || !anonKey) {
   throw new Error('Missing Supabase Edge Function configuration')
 }
-
-const admin = createClient(supabaseUrl, serviceRoleKey, {
-  auth: { autoRefreshToken: false, persistSession: false },
-})
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -59,40 +55,45 @@ Deno.serve(async (request) => {
     return jsonResponse({ message: 'Vérifiez les informations saisies.' }, 400)
   }
 
-  const { data, error } = await admin.auth.admin.createUser({
-    phone: input.phone,
+  const authClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const { data, error } = await authClient.auth.signUp({
+    email: input.email,
     password: input.password,
-    phone_confirm: true,
-    user_metadata: {
-      username: input.username,
-      first_name: input.firstName,
-      last_name: 'lastName' in input ? input.lastName : null,
-      gender: input.gender,
-      role: input.role,
-      city: 'city' in input ? input.city : null,
-      coverage_areas: 'coverageAreas' in input ? input.coverageAreas : null,
-      specialties: 'specialties' in input ? input.specialties : [],
-      years_experience: 'yearsExperience' in input ? input.yearsExperience : null,
+    options: {
+      data: {
+        username: input.username,
+        first_name: input.firstName,
+        last_name: 'lastName' in input ? input.lastName : null,
+        gender: input.gender,
+        role: input.role,
+        city: 'city' in input ? input.city : null,
+        coverage_areas: 'coverageAreas' in input ? input.coverageAreas : null,
+        specialties: 'specialties' in input ? input.specialties : [],
+        years_experience: 'yearsExperience' in input ? input.yearsExperience : null,
+      },
     },
   })
 
-  if (error || !data.user) {
-    return jsonResponse({ message: 'Impossible de créer le compte. Vérifiez le numéro et le nom d’utilisateur.' }, 400)
+  if (error) {
+    return jsonResponse({ message: 'Impossible de créer le compte. Vérifiez l’adresse e-mail et le pseudo.' }, 400)
   }
-
-  const { data: signedIn, error: signInError } = await admin.auth.signInWithPassword({
-    phone: input.phone,
-    password: input.password,
-  })
-
-  if (signInError || !signedIn.session) {
-    return jsonResponse({ message: 'Le compte a été créé, mais la connexion a échoué. Connectez-vous avec vos identifiants.' }, 202)
+  if (!data.user) {
+    return jsonResponse({ message: 'Le service d’inscription n’a pas confirmé la création du compte.' }, 502)
+  }
+  if (data.user.identities?.length === 0) {
+    return jsonResponse({ message: 'Cette adresse e-mail est déjà associée à un compte.' }, 409)
+  }
+  if (!data.session) {
+    return jsonResponse({ confirmationRequired: true }, 202)
   }
 
   return jsonResponse({
+    confirmationRequired: false,
     session: {
-      access_token: signedIn.session.access_token,
-      refresh_token: signedIn.session.refresh_token,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
     },
   })
 })

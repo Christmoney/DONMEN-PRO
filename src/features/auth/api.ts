@@ -2,12 +2,13 @@ import { z } from 'zod'
 
 import { supabase } from '../../lib/supabase'
 import type { SignupInput } from './validation'
-import { normalizeCameroonPhone } from './validation'
 
 const credentialsSchema = z.object({
-  identifier: z.string().trim().min(1),
+  email: z.string().trim().email(),
   password: z.string().min(1),
 })
+
+export type SignupResult = { confirmationRequired: boolean }
 
 function getClient() {
   if (!supabase) {
@@ -27,20 +28,20 @@ function readSession(data: unknown): { access_token: string; refresh_token: stri
   return parsed.data
 }
 
-export async function login(identifier: string, password: string): Promise<void> {
-  const input = credentialsSchema.parse({ identifier, password })
+export async function login(email: string, password: string): Promise<void> {
+  const input = credentialsSchema.parse({ email, password })
   const client = getClient()
   const { data, error } = await client.functions.invoke('login', {
     body: {
-      identifier: input.identifier,
+      email: input.email,
       password: input.password,
     },
   })
 
   if (error) {
     const status = error.context instanceof Response ? error.context.status : 0
-    if (status === 400 || status === 401 || status === 429) {
-      throw new Error('Identifiants incorrects')
+    if (status === 400 || status === 401 || status === 422 || status === 429) {
+      throw new Error('Adresse e-mail ou mot de passe incorrect.')
     }
     throw new Error('Service temporairement indisponible. Réessayez plus tard.')
   }
@@ -58,23 +59,28 @@ export async function login(identifier: string, password: string): Promise<void>
   }
 }
 
-export async function signup(input: SignupInput): Promise<void> {
+export async function signup(input: SignupInput): Promise<SignupResult> {
   const client = getClient()
   const role = 'lastName' in input ? 'hairdresser' : 'client'
   const { data, error } = await client.functions.invoke('signup', {
     body: {
       ...input,
-      phone: normalizeCameroonPhone(input.phone),
+      email: input.email,
       role,
     },
   })
 
   if (error) {
-    const status = error.context instanceof Response ? error.context.status : 0
-    if (status === 400 || status === 409) {
-      throw new Error('Impossible de créer le compte. Vérifiez vos informations et réessayez.')
+    if (error.context instanceof Response) {
+      const body = z.object({ message: z.string() }).safeParse(await error.context.json())
+      if (body.success) {
+        throw new Error(body.data.message)
+      }
     }
     throw new Error('Service temporairement indisponible. Réessayez plus tard.')
+  }
+  if (data?.confirmationRequired === true) {
+    return { confirmationRequired: true }
   }
   if (!data?.session) {
     throw new Error(data?.message || 'Impossible de créer le compte. Vérifiez vos informations et réessayez.')
@@ -88,6 +94,7 @@ export async function signup(input: SignupInput): Promise<void> {
   if (sessionError) {
     throw sessionError
   }
+  return { confirmationRequired: false }
 }
 
 export async function signOut(): Promise<void> {
@@ -98,26 +105,36 @@ export async function signOut(): Promise<void> {
 }
 
 export async function getProfile(userId: string) {
-  const { data, error } = await getClient()
-    .from('profiles')
-    .select('first_name, username, phone')
-    .eq('id', userId)
-    .single()
+  const client = getClient()
+  const { data: { user: authenticatedUser }, error: authError } = await client.auth.getUser()
 
-  if (error) {
-    throw error
+  if (authError) {
+    throw authError
+  }
+  if (!authenticatedUser || authenticatedUser.id !== userId) {
+    throw new Error('La session a changé. Veuillez vous reconnecter.')
   }
 
-  const { data: roleData, error: roleError } = await getClient()
-    .from('user_roles')
-    .select('role')
-    .eq('user_id', userId)
-    .single()
+  const [profileResult, roleResult] = await Promise.all([
+    client
+      .from('profiles')
+      .select('first_name, username, phone')
+      .eq('id', authenticatedUser.id)
+      .single(),
+    client
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authenticatedUser.id)
+      .single(),
+  ])
 
-  if (roleError) {
-    throw roleError
+  if (profileResult.error) {
+    throw profileResult.error
+  }
+  if (roleResult.error) {
+    throw roleResult.error
   }
 
-  const role = z.enum(['client', 'hairdresser', 'admin']).parse(roleData.role)
-  return { ...data, role }
+  const role = z.enum(['client', 'hairdresser', 'admin']).parse(roleResult.data.role)
+  return { ...profileResult.data, role }
 }
