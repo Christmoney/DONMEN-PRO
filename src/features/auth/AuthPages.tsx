@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
-import { Crown } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 
 import { HONORIFIC } from '../../config/brand'
+import BrandMark from '../../components/brand/BrandMark'
 import './auth.css'
 import { useAuth } from './AuthProvider'
 import {
@@ -25,16 +25,14 @@ const signupValidationKeys: Record<string, string> = {
 type AuthFrameProps = {
   children: ReactNode
   eyebrow: string
+  onBack: () => void
 }
 
-function AuthFrame({ children, eyebrow }: AuthFrameProps) {
+function AuthFrame({ children, eyebrow, onBack }: AuthFrameProps) {
   return (
     <main className="donmen-auth">
+      <BrandMark showBack onBack={onBack} />
       <section className="donmen-auth-card">
-        <div className="donmen-auth-brand" aria-label="DONMEN">
-          <span className="donmen-auth-monogram" aria-hidden="true">D</span>
-          <Crown className="donmen-auth-crown" size={22} strokeWidth={1.8} aria-hidden="true" />
-        </div>
         <p className="donmen-auth-eyebrow">{eyebrow}</p>
         {children}
       </section>
@@ -147,7 +145,7 @@ export function LoginPage() {
   }
 
   return (
-    <AuthFrame eyebrow={t('auth.loginEyebrow')}>
+    <AuthFrame eyebrow={t('auth.loginEyebrow')} onBack={() => navigate('/bienvenue')}>
       <h1>{t('auth.reconnect')}</h1>
       <p className="donmen-auth-subtitle">{t('auth.loginSubtitle')}</p>
       {(location.state as { emailConfirmationSent?: boolean } | null)?.emailConfirmationSent ? (
@@ -217,7 +215,7 @@ export function SignupPage({ role }: { role: 'client' | 'hairdresser' }) {
   }
 
   return (
-    <AuthFrame eyebrow={t('auth.signupEyebrow')}>
+    <AuthFrame eyebrow={t('auth.signupEyebrow')} onBack={() => navigate('/bienvenue')}>
       <h1>{t('auth.signupTitle')}</h1>
       <p className="donmen-auth-subtitle">{t('auth.signupSubtitle')}</p>
       <form className="donmen-auth-form" onSubmit={(event) => void handleSubmit(event)}>
@@ -269,7 +267,7 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthFrame eyebrow={t('auth.resetEyebrow')}>
+    <AuthFrame eyebrow={t('auth.resetEyebrow')} onBack={() => navigate('/connexion')}>
       <h1>{t('auth.forgotPassword')}</h1>
       <p className="donmen-auth-subtitle">{t('auth.resetSubtitle')}</p>
       {sent ? <p className="donmen-auth-success" role="status">{t('auth.resetSent')}</p> : null}
@@ -320,7 +318,7 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <AuthFrame eyebrow={t('auth.resetEyebrow')}>
+    <AuthFrame eyebrow={t('auth.resetEyebrow')} onBack={() => navigate('/connexion')}>
       <h1>{t('auth.choosePassword')}</h1>
       <p className="donmen-auth-subtitle">{t('auth.choosePasswordSubtitle')}</p>
       {!loading && !user ? (

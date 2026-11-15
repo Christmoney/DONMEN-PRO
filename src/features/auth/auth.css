@@ -1,63 +1,31 @@
 .donmen-auth {
-  --auth-navy: #07162f;
-  --auth-navy-light: #10254a;
-  --auth-gold: #d9a62e;
-  --auth-gold-light: #f0d68a;
-  --auth-white: #fffdf8;
-  --auth-muted: #aab4c5;
+  --auth-primary: var(--primary);
+  --auth-primary-dark: var(--primary-dark);
+  --auth-gold: var(--gold);
+  --auth-gold-light: var(--gold-soft);
+  --auth-text: var(--text);
+  --auth-muted: var(--muted);
+  width: min(100%, 520px);
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: max(24px, env(safe-area-inset-top)) 18px max(24px, env(safe-area-inset-bottom));
-  background:
-    radial-gradient(ellipse at 50% 0%, rgb(217 166 46 / 14%), transparent 48%),
-    linear-gradient(145deg, #0d2041 0%, var(--auth-navy) 58%, #050d1c 100%);
-  color: var(--auth-white);
+  align-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background: var(--page-bg);
+  color: var(--auth-text);
 }
 
 .donmen-auth-card {
-  width: min(100%, 430px);
-  padding: clamp(26px, 7vw, 42px);
-  border: 1px solid rgb(240 214 138 / 19%);
-  border-radius: 26px;
-  background: linear-gradient(160deg, rgb(255 255 255 / 7%), rgb(255 255 255 / 3%));
-  box-shadow: 0 28px 80px rgb(0 0 0 / 32%), inset 0 1px rgb(255 255 255 / 8%);
-  backdrop-filter: blur(18px);
-}
-
-.donmen-auth-brand {
-  position: relative;
-  width: 68px;
-  height: 68px;
-  display: grid;
-  place-items: center;
-  margin: 0 auto 15px;
-  border: 1px solid rgb(217 166 46 / 50%);
-  border-radius: 21px;
-  background: linear-gradient(145deg, #17315b, #0a1830);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 20%);
-}
-
-.donmen-auth-monogram {
-  color: var(--auth-gold-light);
-  font-family: 'Playfair Display', serif;
-  font-size: 2.4rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.donmen-auth-crown {
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  color: var(--auth-gold);
-  fill: var(--auth-gold);
-  transform: translateX(-50%);
+  width: 100%;
+  padding: clamp(22px, 6vw, 34px);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  box-shadow: 0 16px 42px var(--shadow);
 }
 
 .donmen-auth-eyebrow {
   margin: 0 0 8px;
-  color: var(--auth-gold-light);
+  color: var(--auth-primary);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.22em;
@@ -67,7 +35,7 @@
 
 .donmen-auth-card h1 {
   margin: 0;
-  color: var(--auth-white);
+  color: var(--auth-primary-dark);
   font-family: 'Playfair Display', serif;
   font-size: clamp(1.7rem, 7vw, 2.15rem);
   font-weight: 700;
@@ -91,7 +59,7 @@
 .donmen-auth-field {
   display: grid;
   gap: 8px;
-  color: #e7ebf2;
+  color: var(--auth-text);
   font-size: 0.8rem;
   font-weight: 600;
 }
@@ -100,25 +68,24 @@
   width: 100%;
   min-height: 52px;
   padding: 0 15px;
-  border: 1px solid rgb(196 207 224 / 20%);
-  border-radius: 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   outline: none;
-  background: rgb(3 12 27 / 42%);
-  color: var(--auth-white);
+  background: var(--card);
+  color: var(--auth-text);
   font: inherit;
   font-size: 0.98rem;
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
 .donmen-auth-field input:focus {
-  border-color: var(--auth-gold);
-  background: rgb(3 12 27 / 65%);
-  box-shadow: 0 0 0 3px rgb(217 166 46 / 15%);
+  border-color: var(--auth-primary);
+  box-shadow: 0 0 0 3px rgb(0 37 124 / 12%);
 }
 
 .donmen-auth-greeting {
   margin: -8px 0 0;
-  color: var(--auth-gold-light);
+  color: var(--auth-primary);
   font-size: 0.77rem;
 }
 
@@ -127,7 +94,7 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--auth-gold-light);
+  color: var(--auth-primary);
   font: inherit;
   font-size: 0.83rem;
   font-weight: 700;
@@ -136,7 +103,7 @@
 }
 
 .donmen-auth-inline-link:hover {
-  color: #ffe8ac;
+  color: var(--auth-primary-dark);
   text-decoration: underline;
 }
 
@@ -144,11 +111,10 @@
   width: 100%;
   min-height: 54px;
   margin-top: 4px;
-  border: 1px solid #f0c95e;
-  border-radius: 14px;
-  background: linear-gradient(115deg, #f0d68a 0%, #d9a62e 55%, #c48a16 100%);
-  box-shadow: 0 10px 24px rgb(217 166 46 / 18%);
-  color: #111a2b;
+  border: 1px solid var(--auth-gold);
+  border-radius: var(--radius-md);
+  background: var(--auth-gold);
+  color: var(--auth-primary-dark);
   font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -170,6 +136,7 @@
 
 .donmen-auth-social {
   margin-top: 23px;
+  color: var(--auth-muted);
 }
 
 .donmen-auth-divider {
@@ -184,7 +151,7 @@
 .donmen-auth-divider::after {
   height: 1px;
   flex: 1;
-  background: rgb(196 207 224 / 20%);
+  background: var(--border-soft);
   content: '';
 }
 
@@ -201,10 +168,10 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid rgb(196 207 224 / 20%);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 5%);
-  color: var(--auth-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--card);
+  color: var(--auth-primary-dark);
   font-size: 0.77rem;
   font-weight: 600;
   cursor: pointer;
@@ -212,12 +179,12 @@
 }
 
 .donmen-auth-social-button:hover:not(:disabled) {
-  border-color: rgb(240 214 138 / 58%);
-  background: rgb(255 255 255 / 9%);
+  border-color: var(--auth-primary);
+  background: var(--page-bg);
 }
 
 .donmen-auth-social-mark {
-  color: var(--auth-gold-light);
+  color: var(--auth-primary);
   font-size: 1.1rem;
   font-weight: 800;
 }
@@ -252,27 +219,27 @@
 }
 
 .donmen-auth-error {
-  border: 1px solid rgb(255 120 120 / 30%);
-  background: rgb(127 29 29 / 18%);
-  color: #ffb6b6;
+  border: 1px solid rgb(180 35 24 / 24%);
+  background: rgb(180 35 24 / 6%);
+  color: var(--danger);
   overflow-wrap: anywhere;
 }
 
 .donmen-auth-success {
   margin-bottom: 14px;
-  border: 1px solid rgb(119 206 151 / 32%);
-  background: rgb(22 101 52 / 18%);
-  color: #b6efc8;
+  border: 1px solid rgb(31 141 93 / 24%);
+  background: rgb(31 141 93 / 6%);
+  color: var(--success);
 }
 
 @media (max-width: 380px) {
   .donmen-auth {
-    padding-right: 12px;
-    padding-left: 12px;
+    padding-right: 16px;
+    padding-left: 16px;
   }
 
   .donmen-auth-card {
-    padding: 26px 20px;
+    padding: 22px 18px;
   }
 
   .donmen-auth-social-row {
