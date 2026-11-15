@@ -24,7 +24,7 @@ type AuthContextValue = {
   isNewSignup: boolean
   configured: boolean
   login: (email: string, password: string) => Promise<void>
-  signup: (input: SignupInput) => Promise<SignupResult>
+  signup: (input: SignupInput, role: 'client' | 'hairdresser') => Promise<SignupResult>
   logout: () => Promise<void>
 }
 
@@ -128,9 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await loginRequest(email, password)
   }, [])
 
-  const signup = useCallback(async (input: SignupInput) => {
+  const signup = useCallback(async (input: SignupInput, role: 'client' | 'hairdresser') => {
     setError(null)
-    const result = await signupRequest(input)
+    const result = await signupRequest(input, role)
     setIsNewSignup(!result.confirmationRequired)
     return result
   }, [])

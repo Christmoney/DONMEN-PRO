@@ -11,23 +11,12 @@ const corsHeaders = {
 const commonSignup = {
   username: z.string().trim().min(3).max(20).regex(/^[a-zA-Z0-9._-]+$/),
   email: z.string().trim().toLowerCase().email().max(254),
-  firstName: z.string().trim().min(1).max(100),
   password: z.string().min(MIN_PASSWORD_LENGTH).max(256),
-  gender: z.enum(['female', 'male']),
-  acceptedTerms: z.literal(true),
 }
 
 const signupSchema = z.discriminatedUnion('role', [
   z.object({ ...commonSignup, role: z.literal('client') }),
-  z.object({
-    ...commonSignup,
-    role: z.literal('hairdresser'),
-    lastName: z.string().trim().min(1).max(100),
-    city: z.string().trim().min(1).max(100),
-    coverageAreas: z.string().trim().min(1).max(500),
-    specialties: z.array(z.string().trim().min(1).max(50)).min(1).max(10),
-    yearsExperience: z.number().int().min(0).max(80),
-  }),
+  z.object({ ...commonSignup, role: z.literal('hairdresser') }),
 ])
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -64,14 +53,8 @@ Deno.serve(async (request) => {
     options: {
       data: {
         username: input.username,
-        first_name: input.firstName,
-        last_name: 'lastName' in input ? input.lastName : null,
-        gender: input.gender,
+        first_name: input.username,
         role: input.role,
-        city: 'city' in input ? input.city : null,
-        coverage_areas: 'coverageAreas' in input ? input.coverageAreas : null,
-        specialties: 'specialties' in input ? input.specialties : [],
-        years_experience: 'yearsExperience' in input ? input.yearsExperience : null,
       },
     },
   })

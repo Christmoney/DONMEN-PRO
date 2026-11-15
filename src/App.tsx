@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import {
   CalendarRange,
   Droplets,
@@ -18,26 +17,12 @@ import BrandMark from './components/brand/BrandMark'
 import { hairdressers, services, timeSlots } from './data/mock'
 import { useAuth } from './features/auth/AuthProvider'
 import type { AppRole } from './features/auth/AuthProvider'
-import { clientSignupSchema, hairdresserSignupSchema } from './features/auth/validation'
+import { ForgotPasswordPage, LoginPage, ResetPasswordPage, SignupPage } from './features/auth/AuthPages'
 import Bienvenue from './pages/Bienvenue'
 
-const featureOptions = ['Tresses', 'Tissage', 'Coupe', 'Soins', 'Coloration']
 const hairTypes = ['Lisses', 'Ondulés', 'Bouclés', 'Crépus']
 const scalpTypes = ['Sec', 'Gras', 'Sensible']
 const goals = ['Hydratation', 'Pousse', 'Réparation', 'Protéger mes tresses']
-const signupValidationKeys: Record<string, string> = {
-  username: 'username',
-  email: 'email',
-  firstName: 'firstName',
-  password: 'password',
-  gender: 'gender',
-  acceptedTerms: 'terms',
-  lastName: 'lastName',
-  city: 'city',
-  coverageAreas: 'areas',
-  specialties: 'specialties',
-  yearsExperience: 'experience',
-}
 
 function App() {
   const { user, profile, loading, error, logout } = useAuth()
@@ -62,6 +47,8 @@ function App() {
       <Route path="/connexion" element={<PublicOnly session={session}><LoginPage /></PublicOnly>} />
       <Route path="/inscription/client" element={<PublicOnly session={session}><SignupPage role="client" /></PublicOnly>} />
       <Route path="/inscription/coiffeur" element={<PublicOnly session={session}><SignupPage role="hairdresser" /></PublicOnly>} />
+      <Route path="/mot-de-passe-oublie" element={<PublicOnly session={session}><ForgotPasswordPage /></PublicOnly>} />
+      <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
 
       <Route path="/" element={<ProtectedRoute session={session} allowedRoles={['client']}><ClientHomePage firstName={session.firstName} /></ProtectedRoute>} />
       <Route path="/coiffeurs" element={<ProtectedRoute session={session} allowedRoles={['client']}><HairdressersPage /></ProtectedRoute>} />
@@ -122,44 +109,6 @@ function Button({ children, variant = 'primary', fullWidth = false, type = 'butt
   )
 }
 
-function Field({
-  label,
-  type = 'text',
-  placeholder,
-  value,
-  onChange,
-  help,
-  error,
-}: {
-  label: string
-  type?: string
-  placeholder?: string
-  value: string
-  onChange: (value: string) => void
-  help?: string
-  error?: string
-}) {
-  const id = label.toLowerCase().replace(/\s+/g, '-')
-  return (
-    <label className="field" htmlFor={id}>
-      <span className="field-label">{label}</span>
-      <input
-        id={id}
-        type={type}
-        className="field-input"
-        placeholder={placeholder}
-        value={value}
-        required
-        onChange={(event) => onChange(event.target.value)}
-        aria-invalid={Boolean(error)}
-        aria-describedby={help ? `${id}-help` : undefined}
-      />
-      {help ? <small id={`${id}-help`} className="field-help">{help}</small> : null}
-      {error ? <small className="field-error">{error}</small> : null}
-    </label>
-  )
-}
-
 function Chip({ selected, children, onClick }: { selected?: boolean; children: React.ReactNode; onClick?: () => void }) {
   return (
     <button type="button" className={`chip ${selected ? 'selected' : ''}`} onClick={onClick}>
@@ -186,186 +135,6 @@ function BottomNav() {
         </NavLink>
       ))}
     </nav>
-  )
-}
-
-function LoginPage() {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { t } = useTranslation()
-  const { login, configured } = useAuth()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [pending, setPending] = useState(false)
-  const [showResetMessage, setShowResetMessage] = useState(false)
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    setPending(true)
-    try {
-      await login(email, password)
-      const state = location.state as { from?: { pathname?: string } } | null
-      navigate(state?.from?.pathname || '/', { replace: true })
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : t('auth.incorrectCredentials'))
-    } finally {
-      setPending(false)
-    }
-  }
-
-  return (
-    <main className="auth-shell">
-      <BrandMark showBack onBack={() => navigate('/bienvenue')} />
-      <div className="auth-panel">
-        <h1>{t('auth.reconnect')}</h1>
-        <p>{t('auth.loginSubtitle')}</p>
-        {(location.state as { emailConfirmationSent?: boolean } | null)?.emailConfirmationSent ? (
-          <p className="auth-note" role="status">{t('auth.emailConfirmationSent')}</p>
-        ) : null}
-        <form onSubmit={(event) => void handleSubmit(event)}>
-          <Field label={t('auth.email')} type="email" value={email} onChange={setEmail} />
-          <Field label={t('auth.password')} type="password" value={password} onChange={setPassword} />
-          {error ? <div className="error-banner" role="alert">{error}</div> : null}
-          {!configured ? <p className="auth-note" role="status">{t('auth.supabaseLoginSetup')}</p> : null}
-          <Button fullWidth type="submit" disabled={pending || !configured}>{pending ? t('auth.connecting') : t('auth.loginAction')}</Button>
-        </form>
-        <button type="button" className="link-button" onClick={() => setShowResetMessage(true)}>{t('auth.forgotPassword')}</button>
-        {showResetMessage ? <p className="auth-note" role="status">{t('auth.resetMessage')}</p> : null}
-        <p className="welcome-footer">
-          {t('auth.notRegistered')} <button type="button" className="link-button" onClick={() => navigate('/bienvenue')}>{t('auth.createAccount')}</button>
-        </p>
-      </div>
-    </main>
-  )
-}
-
-function SignupPage({ role }: { role: 'client' | 'hairdresser' }) {
-  const navigate = useNavigate()
-  const { t } = useTranslation()
-  const { signup, configured } = useAuth()
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [password, setPassword] = useState('')
-  const [gender, setGender] = useState<'female' | 'male' | ''>('')
-  const [city, setCity] = useState('')
-  const [coverageAreas, setCoverageAreas] = useState('')
-  const [specialties, setSpecialties] = useState<string[]>([])
-  const [yearsExperience, setYearsExperience] = useState('')
-  const [accepted, setAccepted] = useState(false)
-  const [error, setError] = useState('')
-  const [pending, setPending] = useState(false)
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setError('')
-    const values = {
-      username,
-      email,
-      firstName,
-      password,
-      gender,
-      acceptedTerms: accepted,
-      ...(role === 'hairdresser'
-        ? {
-            lastName,
-            city,
-            coverageAreas,
-            specialties,
-            yearsExperience: yearsExperience === '' ? Number.NaN : Number(yearsExperience),
-          }
-        : {}),
-    }
-    const parsed = (role === 'client' ? clientSignupSchema : hairdresserSignupSchema).safeParse(values)
-    if (!parsed.success) {
-      const field = String(parsed.error.issues[0]?.path[0] ?? '')
-      setError(t(`auth.validation.${signupValidationKeys[field] ?? 'invalid'}`))
-      return
-    }
-
-    setPending(true)
-    try {
-      const result = await signup(parsed.data)
-      if (result.confirmationRequired) {
-        navigate('/connexion', { replace: true, state: { emailConfirmationSent: true } })
-        return
-      }
-      navigate(role === 'client' ? '/' : '/pro', { replace: true })
-    } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Impossible de créer le compte.')
-    } finally {
-      setPending(false)
-    }
-  }
-
-  return (
-    <main className="auth-shell">
-      <BrandMark showBack onBack={() => navigate('/bienvenue')} />
-      <div className="auth-panel">
-        <h1>{role === 'client' ? t('auth.clientTitle') : t('auth.hairdresserTitle')}</h1>
-        <p>{role === 'client' ? t('auth.clientSubtitle') : t('auth.hairdresserSubtitle')}</p>
-
-        <form onSubmit={(event) => void handleSubmit(event)}>
-          <Field
-            label={t('auth.username')}
-            value={username}
-            onChange={setUsername}
-            help={t('auth.usernameHelp', { honorific: HONORIFIC, username: username.trim() || '…' })}
-          />
-          <Field label={t('auth.email')} type="email" value={email} onChange={setEmail} />
-          <Field label={t('auth.password')} type="password" value={password} onChange={setPassword} help={t('auth.passwordHelp')} />
-          <span className="field-label">{t('auth.gender')}</span>
-          <div className="segment-row">
-            <Chip selected={gender === 'female'} onClick={() => setGender('female')}>{t('auth.female')}</Chip>
-            <Chip selected={gender === 'male'} onClick={() => setGender('male')}>{t('auth.male')}</Chip>
-          </div>
-          <Field
-            label={t('auth.firstName')}
-            value={firstName}
-            onChange={setFirstName}
-            placeholder={t('auth.firstNamePlaceholder')}
-            help={t('auth.firstNameHint')}
-          />
-          {role === 'hairdresser' ? <Field label={t('auth.lastName')} value={lastName} onChange={setLastName} placeholder={t('auth.lastNamePlaceholder')} /> : null}
-          {role === 'hairdresser' ? (
-            <>
-              <Field label={t('auth.city')} value={city} onChange={setCity} placeholder="Ex. Douala" />
-              <Field label={t('auth.areas')} value={coverageAreas} onChange={setCoverageAreas} placeholder="Ex. Bonanjo, Akwa" />
-              <div className="field">
-                <span className="field-label">{t('auth.specialties')}</span>
-                <div className="feature-list">
-                  {featureOptions.map((label) => {
-                    const selected = specialties.includes(label)
-                    return (
-                      <Chip
-                        key={label}
-                        selected={selected}
-                        onClick={() => setSpecialties((current) => selected ? current.filter((value) => value !== label) : [...current, label])}
-                      >
-                        {label}
-                      </Chip>
-                    )
-                  })}
-                </div>
-              </div>
-              <Field label={t('auth.experience')} type="number" value={yearsExperience} onChange={setYearsExperience} />
-            </>
-          ) : null}
-
-          <label className="checkbox-row">
-            <input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />
-            <span>{t('auth.terms')}</span>
-          </label>
-          {error ? <div className="error-banner" role="alert">{error}</div> : null}
-          {!configured ? <p className="auth-note" role="status">{t('auth.supabaseSignupSetup')}</p> : null}
-          <Button fullWidth type="submit" disabled={pending || !configured}>{pending ? t('auth.creating') : t('auth.createAccountAction')}</Button>
-        </form>
-        <p className="auth-note">{role === 'client' ? t('auth.notes') : t('auth.profileNote')}</p>
-      </div>
-    </main>
   )
 }
 

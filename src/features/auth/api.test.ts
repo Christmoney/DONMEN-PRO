@@ -1,21 +1,30 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   setSession: vi.fn(),
+  signInWithOAuth: vi.fn(),
+  resetPasswordForEmail: vi.fn(),
+  updateUser: vi.fn(),
   from: vi.fn(),
   invoke: vi.fn(),
 }))
 
 vi.mock('../../lib/supabase', () => ({
   supabase: {
-    auth: { getUser: mocks.getUser, setSession: mocks.setSession },
+    auth: {
+      getUser: mocks.getUser,
+      setSession: mocks.setSession,
+      signInWithOAuth: mocks.signInWithOAuth,
+      resetPasswordForEmail: mocks.resetPasswordForEmail,
+      updateUser: mocks.updateUser,
+    },
     from: mocks.from,
     functions: { invoke: mocks.invoke },
   },
 }))
 
-import { getProfile, signup } from './api'
+import { getProfile, requestPasswordReset, signInWithOAuth, signup, updatePassword } from './api'
 
 describe('getProfile', () => {
   beforeEach(() => {
@@ -75,19 +84,52 @@ describe('getProfile', () => {
     await expect(signup({
       username: 'new-client',
       email: 'new@example.com',
-      firstName: 'New',
       password: 'secret1',
-      gender: 'male',
-      acceptedTerms: true,
-    })).resolves.toEqual({ confirmationRequired: true })
+      confirmPassword: 'secret1',
+    }, 'client')).resolves.toEqual({ confirmationRequired: true })
 
     expect(mocks.invoke).toHaveBeenCalledWith('signup', {
-      body: expect.objectContaining({
+      body: {
+        username: 'new-client',
         email: 'new@example.com',
+        password: 'secret1',
         role: 'client',
-      }),
+      },
     })
-    expect(mocks.invoke.mock.calls[0][1].body).not.toHaveProperty('phone')
     expect(mocks.setSession).not.toHaveBeenCalled()
+  })
+})
+
+describe('social and password recovery auth', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.stubGlobal('window', { location: { origin: 'http://localhost' } })
+    mocks.signInWithOAuth.mockResolvedValue({ error: null })
+    mocks.resetPasswordForEmail.mockResolvedValue({ error: null })
+    mocks.updateUser.mockResolvedValue({ error: null })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('starts the requested social provider with the app callback', async () => {
+    await signInWithOAuth('apple')
+    expect(mocks.signInWithOAuth).toHaveBeenCalledWith({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin },
+    })
+  })
+
+  it('sends password recovery links to the password update screen', async () => {
+    await requestPasswordReset('person@example.com')
+    expect(mocks.resetPasswordForEmail).toHaveBeenCalledWith('person@example.com', {
+      redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
+    })
+  })
+
+  it('updates the password through Supabase Auth', async () => {
+    await updatePassword('new-secret')
+    expect(mocks.updateUser).toHaveBeenCalledWith({ password: 'new-secret' })
   })
 })

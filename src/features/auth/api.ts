@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { supabase } from '../../lib/supabase'
 import type { SignupInput } from './validation'
 
+export type OAuthProvider = 'google' | 'apple' | 'facebook'
+
 const credentialsSchema = z.object({
   email: z.string().trim().email(),
   password: z.string().min(1),
@@ -59,13 +61,13 @@ export async function login(email: string, password: string): Promise<void> {
   }
 }
 
-export async function signup(input: SignupInput): Promise<SignupResult> {
+export async function signup(input: SignupInput, role: 'client' | 'hairdresser'): Promise<SignupResult> {
   const client = getClient()
-  const role = 'lastName' in input ? 'hairdresser' : 'client'
   const { data, error } = await client.functions.invoke('signup', {
     body: {
-      ...input,
+      username: input.username,
       email: input.email,
+      password: input.password,
       role,
     },
   })
@@ -95,6 +97,28 @@ export async function signup(input: SignupInput): Promise<SignupResult> {
     throw sessionError
   }
   return { confirmationRequired: false }
+}
+
+export async function signInWithOAuth(provider: OAuthProvider): Promise<void> {
+  const { error } = await getClient().auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: window.location.origin },
+  })
+  if (error) throw error
+}
+
+export async function requestPasswordReset(email: string): Promise<void> {
+  const input = z.string().trim().email().max(254).parse(email)
+  const { error } = await getClient().auth.resetPasswordForEmail(input, {
+    redirectTo: `${window.location.origin}/reinitialiser-mot-de-passe`,
+  })
+  if (error) throw error
+}
+
+export async function updatePassword(password: string): Promise<void> {
+  const input = z.string().min(6).max(256).parse(password)
+  const { error } = await getClient().auth.updateUser({ password: input })
+  if (error) throw error
 }
 
 export async function signOut(): Promise<void> {
