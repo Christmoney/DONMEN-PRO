@@ -2,6 +2,10 @@
   "name": "donmen",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@12.18.0",
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -9,8 +13,19 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "db:test": "supabase test db",
+    "size": "size-limit",
     "preview": "vite preview --host 0.0.0.0"
   },
+  "size-limit": [
+    {
+      "name": "JavaScript initial gzip",
+      "path": "dist/assets/index-*.js",
+      "limit": "200 KB",
+      "gzip": true
+    }
+  ],
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
     "@fontsource/playfair-display": "^5.3.0",
@@ -25,6 +40,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.0",
+    "@playwright/test": "^1.65.1",
+    "@size-limit/file": "^12.1.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.10",
@@ -42,12 +59,14 @@
     "jsdom": "^31.0.1",
     "oxlint": "^1.90.0",
     "postcss": "^8.5.32",
+    "size-limit": "^12.0.0",
     "supabase": "^3.1.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.72.2",
     "vite": "^8.3.6",
     "vite-plugin-pwa": "^2.0.0",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.0",
+    "workbox-window": "7.4.1"
   }
 }

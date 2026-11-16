@@ -399,6 +399,14 @@ button, input {
   justify-content: center;
   color: var(--gold);
   font-weight: 700;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .avatar.large {
@@ -539,6 +547,8 @@ button, input {
   justify-content: center;
   color: var(--primary);
   font-weight: 700;
+  width: 100%;
+  object-fit: cover;
 }
 
 .service-list {
@@ -614,6 +624,59 @@ button, input {
   flex: 1 1 28%;
 }
 
+.booking-field {
+  display: grid;
+  gap: 7px;
+  margin-top: 16px;
+  color: var(--primary-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.booking-field input,
+.booking-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: white;
+  color: var(--primary-dark);
+  font: inherit;
+}
+
+.booking-field textarea {
+  resize: vertical;
+}
+
+.booking-field small {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.booking-service {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  border: 1px solid transparent;
+  color: var(--primary-dark);
+  font: inherit;
+}
+
+.booking-service.selected {
+  border-color: var(--gold);
+  background: #fffaf0;
+}
+
+.booking-service span {
+  display: grid;
+  gap: 4px;
+}
+
+.booking-form {
+  margin: 0;
+}
+
 .booking-section-title {
   margin: 24px 0 12px;
   font-weight: 600;
@@ -667,9 +730,39 @@ button, input {
   font-weight: 700;
 }
 
-.status-badge.accepted {
+.status-badge.accepted,
+.status-badge.status-accepted {
   background: var(--gold-soft);
   color: var(--primary-dark);
+}
+
+.status-badge.status-pending,
+.status-badge.status-on_the_way,
+.status-badge.status-in_progress {
+  background: #fff3d6;
+  color: var(--primary-dark);
+}
+
+.status-badge.status-completed {
+  background: #e3f3e8;
+  color: #155b31;
+}
+
+.status-badge.status-declined,
+.status-badge.status-cancelled,
+.status-badge.status-expired {
+  background: #f3e8e8;
+  color: #783939;
+}
+
+.appointment-service {
+  margin: 6px 0;
+}
+
+.appointment-total {
+  margin: 12px 0;
+  color: var(--primary-dark);
+  font-weight: 700;
 }
 
 .timeline {

@@ -7,6 +7,9 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: [
         'brand/donmen-couronne-transparent.png',
         'brand/donmen-icon-32.png',
@@ -43,6 +46,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    strictPort: true,
   },
   preview: {
     host: '0.0.0.0',
